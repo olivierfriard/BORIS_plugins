@@ -69,24 +69,7 @@ results from one of these older plugin versions.
 
 ## Expected BORIS Data
 
-Most analysis plugins expect a BORIS dataframe containing columns such as:
 
-- `Observation id`
-- `Subject`
-- `Behavior`
-- `Start (s)`
-- `Stop (s)`
-- `Duration (s)`
-
-Some plugins require additional data:
-
-- Modifier-aware kappa plugins use BORIS modifier columns.
-- `number_of_occurences_by_independent_variable.py` uses columns named like
-  `independent variable '...'`.
-- `export_to_feral.py` also reads observation, media, FPS, duration, and frame
-  information from the BORIS project data.
-- `export_to_praat_textgrid.py` uses project time settings when available to set
-  the exported TextGrid time bounds.
 
 ## Development Notes
 
