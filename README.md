@@ -22,7 +22,7 @@ The plugins run inside the Python environment used by BORIS.
 
 
 
-## Current Plugins
+## Current plugins
 
 ### Analysis
 
@@ -89,7 +89,7 @@ Plugins access to a dataframe with the following columns:
     Comment stop
 
 
-## Development Notes
+## Development notes
 
 Each plugin exposes a `run(...)` function that BORIS calls with the selected
 events dataframe, and in some cases the project data or selected parameters.
