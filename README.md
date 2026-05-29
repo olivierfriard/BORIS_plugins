@@ -82,7 +82,7 @@ When adding or updating a plugin:
   up to date.
 - Return a pandas dataframe for tabular analysis results when possible.
 - Return a short string message for export plugins or user-facing errors.
-- Avoid changing unrelated plugin files when creating a new versioned snapshot.
+
 
 ## License
 
