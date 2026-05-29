@@ -69,6 +69,24 @@ results from one of these older plugin versions.
 
 ## Expected BORIS Data
 
+Plugins access to a dataframe with the following columns:
+
+    Observation id
+    Observation date
+    Description
+    Observation type
+    Observation interval start
+    Observation interval stop
+    Subject
+    Observation duration by subject by observation
+    Behavior
+    Behavioral category
+    Behavior type
+    Start (s)
+    Stop (s)
+    Duration (s)
+    Comment start
+    Comment stop
 
 
 ## Development Notes
