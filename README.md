@@ -10,29 +10,17 @@ export; export plugins write files such as JSON or Praat TextGrid.
 
 ## Installation
 
-1. Download or clone this repository.
-2. Copy the plugin `.py` files you want to use into the BORIS plugins
-   directory configured for your BORIS installation.
-3. Start or restart BORIS so it can load the plugins.
+Refer to the [BORIS user guide](https://www.boris.unito.it/user_guide/).
 
-Copy only the plugin files you need. This repository also contains older
-versioned copies of some plugins, and loading both the current and older copies
-may show duplicate plugin entries in BORIS.
+
+If you want to modifiy/improve a plugin download and save it in your personal BORIS plugins directory.
+
 
 ## Requirements
 
 The plugins run inside the Python environment used by BORIS.
 
-Common dependencies used by these plugins are:
 
-- `pandas`
-- `numpy`
-- `PySide6`
-- `scikit-learn` for Cohen's kappa plugins
-
-Some dependencies may already be provided by your BORIS installation. If a
-plugin fails to load, check the BORIS log or console for missing Python package
-errors.
 
 ## Current Plugins
 
