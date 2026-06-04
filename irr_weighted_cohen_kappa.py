@@ -15,7 +15,7 @@ from PySide6.QtWidgets import QInputDialog, QMessageBox
 
 __version__ = "0.0.5"
 __version_date__ = "2026-01-30"
-__plugin_name__ = "Inter Rater Reliability - Weighted Cohen's Kappa NEW"
+__plugin_name__ = "Inter Rater Reliability - Weighted Cohen's Kappa"
 __author__ = "Olivier Friard - University of Torino - Italy"
 __description__ = """
 This plugin calculates Cohen's Kappa to measure inter-rater reliability between two observers
@@ -74,10 +74,18 @@ def run(df: pd.DataFrame):
             return "+".join(sorted(codes)) if codes else None
 
         # --- intervals from SEGMENTS ONLY
-        time_points = sorted(set([t for seg in seg1 for t in seg[:2]] + [t for seg in seg2 for t in seg[:2]]))
+        time_points = sorted(
+            set(
+                [t for seg in seg1 for t in seg[:2]]
+                + [t for seg in seg2 for t in seg[:2]]
+            )
+        )
         elementary_intervals = []
         if len(time_points) >= 2:
-            elementary_intervals = [(time_points[i], time_points[i + 1]) for i in range(len(time_points) - 1)]
+            elementary_intervals = [
+                (time_points[i], time_points[i + 1])
+                for i in range(len(time_points) - 1)
+            ]
 
         # --- instantaneous events
         instant_times = sorted(set([t for t, _ in ev1] + [t for t, _ in ev2]))
@@ -115,7 +123,10 @@ def run(df: pd.DataFrame):
             codes2[c2] = codes2.get(c2, 0.0) + w
 
         # expected agreement
-        pe = sum((codes1.get(c, 0.0) / total_weight) * (codes2.get(c, 0.0) / total_weight) for c in set(codes1) | set(codes2))
+        pe = sum(
+            (codes1.get(c, 0.0) / total_weight) * (codes2.get(c, 0.0) / total_weight)
+            for c in set(codes1) | set(codes2)
+        )
 
         if (1 - pe) == 0:
             kappa = math.nan
@@ -163,7 +174,9 @@ def run(df: pd.DataFrame):
     grouped = {
         obs: [
             (row[0], row[1], row[2] + "|" + row[3])
-            for row in group[["Start (s)", "Stop (s)", "Subject", "Behavior"]].itertuples(index=False, name=None)
+            for row in group[
+                ["Start (s)", "Stop (s)", "Subject", "Behavior"]
+            ].itertuples(index=False, name=None)
         ]
         for obs, group in df.groupby("Observation id")
     }
@@ -182,7 +195,9 @@ def run(df: pd.DataFrame):
         for obs_id2 in unique_obs_list[idx1:]:
             obs2 = grouped[obs_id2]
 
-            kappa, po, pe, table, total_w = cohen_kappa_weighted_by_time(obs1, obs2, event_weight)
+            kappa, po, pe, table, total_w = cohen_kappa_weighted_by_time(
+                obs1, obs2, event_weight
+            )
 
             if math.isnan(kappa):
                 nan_pairs.append((obs_id1, obs_id2))
