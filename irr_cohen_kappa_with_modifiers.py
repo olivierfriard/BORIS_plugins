@@ -14,7 +14,7 @@ from sklearn.metrics import cohen_kappa_score
 
 __version__ = "0.0.4"
 __version_date__ = "2026-01-30"
-__plugin_name__ = "Inter Rater Reliability - Unweighted Cohen's Kappa with modifiers NEW"
+__plugin_name__ = "Inter Rater Reliability - Unweighted Cohen's Kappa with modifiers"
 __author__ = "Olivier Friard - University of Torino - Italy"
 __description__ = """
 This plugin calculates Cohen's Kappa to measure inter-rater reliability between two observers who code categorical behaviors over time.
@@ -98,7 +98,11 @@ def run(df: pd.DataFrame):
             behavior = row[3]
 
             # collect modifiers that belong to this behavior
-            modif_list = [row[i] for idx, i in enumerate(range(4, 4 + len(modifiers))) if modifiers[idx][0] == behavior]
+            modif_list = [
+                row[i]
+                for idx, i in enumerate(range(4, 4 + len(modifiers)))
+                if modifiers[idx][0] == behavior
+            ]
 
             # encode subject|behavior|mod1,mod2,...
             code = row[2] + "|" + behavior + "|" + ",".join(modif_list)
@@ -120,11 +124,19 @@ def run(df: pd.DataFrame):
             seg2, ev2 = split_segments_events(obs2)
 
             # 1) build elementary intervals from segment boundaries ONLY
-            time_points = sorted(set([t for seg in seg1 for t in seg[:2]] + [t for seg in seg2 for t in seg[:2]]))
+            time_points = sorted(
+                set(
+                    [t for seg in seg1 for t in seg[:2]]
+                    + [t for seg in seg2 for t in seg[:2]]
+                )
+            )
 
             elementary_intervals = []
             if len(time_points) >= 2:
-                elementary_intervals = [(time_points[i], time_points[i + 1]) for i in range(len(time_points) - 1)]
+                elementary_intervals = [
+                    (time_points[i], time_points[i + 1])
+                    for i in range(len(time_points) - 1)
+                ]
 
             # 2) instant event times (union)
             instant_times = sorted(set([t for t, _ in ev1] + [t for t, _ in ev2]))
@@ -133,8 +145,12 @@ def run(df: pd.DataFrame):
 
             # 3) build code lists:
             # - interval observations: segment codes only (avoid double-counting events)
-            obs1_codes = [get_code_segments(t0, seg1) for (t0, t1) in elementary_intervals]
-            obs2_codes = [get_code_segments(t0, seg2) for (t0, t1) in elementary_intervals]
+            obs1_codes = [
+                get_code_segments(t0, seg1) for (t0, t1) in elementary_intervals
+            ]
+            obs2_codes = [
+                get_code_segments(t0, seg2) for (t0, t1) in elementary_intervals
+            ]
 
             # - event observations: codes at exact time (segments + events)
             obs1_codes += [get_code_at_time(t, seg1, ev1) for t in instant_times]
