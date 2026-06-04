@@ -8,6 +8,9 @@ __version__ = "0.1.0"
 __version_date__ = "2024-11-14"
 __plugin_name__ = "Time budget (hours)"
 __author__ = "Olivier Friard - University of Torino - Italy"
+__description__ = """
+Calculate behavior time budget statistics by subject and behavior, with durations expressed in hours.
+"""
 
 
 def run(df: pd.DataFrame):

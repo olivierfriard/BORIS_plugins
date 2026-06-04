@@ -24,6 +24,11 @@ __version__ = "0.3.2"
 __version_date__ = "2025-12-19"
 __plugin_name__ = "Export observations to FERAL"
 __author__ = "Jacopo Razzauti - The Rockefeller University; Olivier Friard - University of Torino - Italy"
+__description__ = """
+Export selected BORIS observations to a FERAL-compatible JSON format.
+
+The plugin supports behavior selection, class 0 for "other", and optional train/validation/test/inference grouping.
+"""
 
 
 # ---------------------------

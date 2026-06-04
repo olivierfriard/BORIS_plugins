@@ -10,6 +10,9 @@ __version__ = "0.3.0"
 __version_date__ = "2025-03-17"
 __plugin_name__ = "Number of occurences of behaviors"
 __author__ = "Olivier Friard - University of Torino - Italy"
+__description__ = """
+Count behavior occurrences by subject and behavior.
+"""
 
 
 def run(df: pd.DataFrame):
