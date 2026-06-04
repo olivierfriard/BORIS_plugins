@@ -16,7 +16,7 @@ from PySide6.QtWidgets import QInputDialog, QMessageBox
 
 __version__ = "0.0.5"
 __version_date__ = "2026-01-30"
-__plugin_name__ = "Inter Rater Reliability - Weighted Cohen's Kappa with modifiers NEW"
+__plugin_name__ = "Inter Rater Reliability - Weighted Cohen's Kappa with modifiers"
 __author__ = "Olivier Friard - University of Torino - Italy"
 __description__ = """
 This plugin calculates a time-weighted Cohen's Kappa to measure inter-rater reliability
@@ -67,7 +67,9 @@ def run(df: pd.DataFrame):
         seg1, ev1 = split_segments_events(obs1)
         seg2, ev2 = split_segments_events(obs2)
 
-        def get_code_segments(t: float, segments: list[tuple[float, float, str]]) -> Optional[str]:
+        def get_code_segments(
+            t: float, segments: list[tuple[float, float, str]]
+        ) -> Optional[str]:
             active = [seg[2] for seg in segments if seg[0] <= t < seg[1]]
             return "+".join(sorted(active)) if active else None
 
@@ -82,10 +84,18 @@ def run(df: pd.DataFrame):
             return "+".join(sorted(codes)) if codes else None
 
         # 1) elementary intervals from SEGMENT boundaries ONLY (coherent with unweighted+modifiers)
-        time_points = sorted(set([t for seg in seg1 for t in seg[:2]] + [t for seg in seg2 for t in seg[:2]]))
+        time_points = sorted(
+            set(
+                [t for seg in seg1 for t in seg[:2]]
+                + [t for seg in seg2 for t in seg[:2]]
+            )
+        )
         elementary_intervals = []
         if len(time_points) >= 2:
-            elementary_intervals = [(time_points[i], time_points[i + 1]) for i in range(len(time_points) - 1)]
+            elementary_intervals = [
+                (time_points[i], time_points[i + 1])
+                for i in range(len(time_points) - 1)
+            ]
 
         # 2) instantaneous event times (union)
         instant_times = sorted(set([t for t, _ in ev1] + [t for t, _ in ev2]))
@@ -126,7 +136,10 @@ def run(df: pd.DataFrame):
 
         # expected agreement (Pe)
         all_codes = set(codes1) | set(codes2)
-        pe = sum((codes1.get(c, 0.0) / total_weight) * (codes2.get(c, 0.0) / total_weight) for c in all_codes)
+        pe = sum(
+            (codes1.get(c, 0.0) / total_weight) * (codes2.get(c, 0.0) / total_weight)
+            for c in all_codes
+        )
 
         # kappa
         if (1 - pe) == 0:
@@ -187,7 +200,11 @@ def run(df: pd.DataFrame):
             start, stop, subject, behavior = row[0], row[1], row[2], row[3]
 
             # collect modifiers that belong to this behavior
-            modif_list = [row[i] for idx, i in enumerate(range(4, 4 + len(modifiers))) if modifiers[idx][0] == behavior]
+            modif_list = [
+                row[i]
+                for idx, i in enumerate(range(4, 4 + len(modifiers)))
+                if modifiers[idx][0] == behavior
+            ]
 
             code = subject + "|" + behavior + "|" + ",".join(modif_list)
             o.append((start, stop, code))
@@ -208,7 +225,9 @@ def run(df: pd.DataFrame):
         for obs_id2 in unique_obs_list[idx1:]:
             obs2 = grouped[obs_id2]
 
-            kappa, po, pe, table, total_w = cohen_kappa_weighted_by_time(obs1, obs2, event_weight=event_weight)
+            kappa, po, pe, table, total_w = cohen_kappa_weighted_by_time(
+                obs1, obs2, event_weight=event_weight
+            )
 
             if math.isnan(kappa):
                 nan_pairs.append((obs_id1, obs_id2))
