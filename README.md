@@ -55,17 +55,6 @@ the modifier variants also include BORIS modifier columns.
 | `export_to_praat_textgrid.py` | Export events as Praat TextGrid (subject-behavior tiers) | Writes one Praat `.TextGrid` file per observation, with one tier per subject/behavior pair. |
 | `export_to_feral.py` | Export observations to FERAL | Writes a FERAL-compatible JSON file with behavior classes, per-frame labels, and train/validation/test/inference splits. |
 
-## Older Versioned Copies
-
-The following files are kept as versioned snapshots:
-
-- `irr_cohen_kappa-0.0.3.py`
-- `irr_cohen_kappa_with_modifiers-0.0.3.py`
-- `irr_weighted_cohen_kappa-0.0.4.py`
-- `irr_weighted_cohen_kappa_with_modifiers-0.0.3.py`
-
-Use the unversioned files above unless you specifically need to reproduce
-results from one of these older plugin versions.
 
 ## Expected BORIS Data
 
