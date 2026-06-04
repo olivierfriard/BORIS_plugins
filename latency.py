@@ -10,6 +10,13 @@ __version__ = "0.1.3"
 __version_date__ = "2026-04-13"
 __plugin_name__ = "Behavior latency"
 __author__ = "Olivier Friard - University of Torino - Italy"
+__description__ = """
+Calculate the latency between pairs of behaviors for each observation and subject.
+
+The plugin returns:
+- a detail table with one row for each detected A -> B transition
+- a summary table grouped by subject and behavior pair
+"""
 
 
 GROUP_BY_COLUMNS = ["Observation id", "Subject"]

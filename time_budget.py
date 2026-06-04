@@ -11,6 +11,16 @@ __version__ = "0.3.0"
 __version_date__ = "2025-03-17"
 __plugin_name__ = "Time budget"
 __author__ = "Olivier Friard - University of Torino - Italy"
+__description__ = """
+Calculate summary statistics for behavior time budgets by subject and behavior.
+
+The output includes:
+- number of occurrences
+- total duration
+- duration mean and standard deviation
+- inter-event interval mean and standard deviation
+- percentage of total subject observation duration
+"""
 
 
 def run(df: pd.DataFrame):
