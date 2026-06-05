@@ -10,7 +10,7 @@ import pandas as pd
 from boris import config as cfg
 from PySide6.QtWidgets import QFileDialog, QMessageBox
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 __version_date__ = "2026-06-05"
 __plugin_name__ = "Export events as Praat TextGrid (subject-behavior tiers)"
 __author__ = "Olivier Friard - University of Torino - Italy"
