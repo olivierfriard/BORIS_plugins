@@ -60,22 +60,29 @@ the modifier variants also include BORIS modifier columns.
 
 Plugins access to a dataframe with the following columns:
 
-    Observation id
-    Observation date
-    Description
-    Observation type
-    Observation interval start
-    Observation interval stop
-    Subject
-    Observation duration by subject by observation
-    Behavior
-    Behavioral category
-    Behavior type
-    Start (s)
-    Stop (s)
-    Duration (s)
-    Comment start
-    Comment stop
+
+   Column                                          Non-Null Count  Dtype  
+   ------                                          --------------  -----  
+   Observation id                                  3 non-null      object 
+   Observation date                                3 non-null      object 
+   Description                                     3 non-null      object 
+   Observation type                                3 non-null      object 
+   Observation interval start                      3 non-null      int64  
+   Observation interval stop                       3 non-null      int64  
+   independent variable 'variable label'                     3 non-null      object 
+   ...
+   Subject                                         3 non-null      object 
+   Observation duration by subject by observation  3 non-null      int64  
+   Behavior                                        3 non-null      object 
+   Behavioral category                             3 non-null      object 
+   (behavior code, modifier set)                   1 non-null      object 
+   ...
+   Behavior type                                   3 non-null      object 
+   Start (s)                                       3 non-null      float64
+   Stop (s)                                        3 non-null      float64
+   Duration (s)                                    3 non-null      float64
+   Comment start                                   3 non-null      object 
+   Comment stop                                    3 non-null      object 
 
 
 ## Development notes

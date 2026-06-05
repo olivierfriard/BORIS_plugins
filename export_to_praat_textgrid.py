@@ -7,12 +7,11 @@ Export events to Praat TextGrid using one tier per subject/behavior.
 from pathlib import Path
 
 import pandas as pd
-from PySide6.QtWidgets import QFileDialog
-
 from boris import config as cfg
+from PySide6.QtWidgets import QFileDialog, QMessageBox
 
-__version__ = "0.1.0"
-__version_date__ = "2026-05-14"
+__version__ = "0.1.2"
+__version_date__ = "2026-06-05"
 __plugin_name__ = "Export events as Praat TextGrid (subject-behavior tiers)"
 __author__ = "Olivier Friard - University of Torino - Italy"
 __description__ = """
@@ -21,6 +20,11 @@ Export selected BORIS events to Praat TextGrid files.
 Each subject/behavior pair is exported as a separate tier. This allows
 overlapping behaviors for the same subject to be represented in one TextGrid
 file, because overlapping behaviors no longer share the same IntervalTier.
+
+Modifier values can optionally be appended to the behavior labels exported in
+the TextGrid intervals and points.
+
+Event comments can also be appended to labels with a separate bracketed syntax.
 """
 
 
@@ -32,6 +36,11 @@ REQUIRED_COLUMNS = {
     "Start (s)",
     "Stop (s)",
 }
+
+COMMENT_COLUMNS = (
+    ("Comment start", "start"),
+    ("Comment stop", "stop"),
+)
 
 
 def run(df: pd.DataFrame, project: dict = None, parameters: dict = None) -> str:
@@ -46,6 +55,9 @@ def run(df: pd.DataFrame, project: dict = None, parameters: dict = None) -> str:
     observation_ids = selected_observation_ids(df, project)
     if not observation_ids:
         return "No observations found; nothing to export."
+
+    include_modifiers = should_include_modifiers(parameters)
+    include_comments = ask_include_comments(df)
 
     if len(observation_ids) == 1:
         obs_id = observation_ids[0]
@@ -64,17 +76,43 @@ def run(df: pd.DataFrame, project: dict = None, parameters: dict = None) -> str:
             path = path.with_suffix(".TextGrid")
 
         xmin, xmax = observation_bounds(df, obs_id, project, parameters)
-        path.write_text(build_textgrid(df, obs_id, xmin=xmin, xmax=xmax), encoding="utf-8")
+        path.write_text(
+            build_textgrid(
+                df,
+                obs_id,
+                xmin=xmin,
+                xmax=xmax,
+                include_modifiers=include_modifiers,
+                include_comments=include_comments,
+            ),
+            encoding="utf-8",
+        )
         return f"Saved: {path}"
 
-    export_dir = QFileDialog.getExistingDirectory(None, "Export events as Praat TextGrid")
+    export_dir = QFileDialog.getExistingDirectory(
+        None, "Export events as Praat TextGrid"
+    )
     if not export_dir:
         return "No output directory selected; nothing written."
 
-    return export_textgrids(df, export_dir, project=project, parameters=parameters)
+    return export_textgrids(
+        df,
+        export_dir,
+        project=project,
+        parameters=parameters,
+        include_modifiers=include_modifiers,
+        include_comments=include_comments,
+    )
 
 
-def export_textgrids(df: pd.DataFrame, export_dir: str | Path, project: dict = None, parameters: dict = None) -> str:
+def export_textgrids(
+    df: pd.DataFrame,
+    export_dir: str | Path,
+    project: dict = None,
+    parameters: dict = None,
+    include_modifiers: bool = False,
+    include_comments: bool = False,
+) -> str:
     """
     Write one TextGrid file per observation and return a short export report.
     """
@@ -88,7 +126,17 @@ def export_textgrids(df: pd.DataFrame, export_dir: str | Path, project: dict = N
     for obs_id in selected_observation_ids(df, project):
         xmin, xmax = observation_bounds(df, obs_id, project, parameters)
         out_path = unique_textgrid_path(export_path, obs_id, used_paths)
-        out_path.write_text(build_textgrid(df, obs_id, xmin=xmin, xmax=xmax), encoding="utf-8")
+        out_path.write_text(
+            build_textgrid(
+                df,
+                obs_id,
+                xmin=xmin,
+                xmax=xmax,
+                include_modifiers=include_modifiers,
+                include_comments=include_comments,
+            ),
+            encoding="utf-8",
+        )
         messages.append(f"Saved: {out_path}")
 
     if not messages:
@@ -97,7 +145,14 @@ def export_textgrids(df: pd.DataFrame, export_dir: str | Path, project: dict = N
     return "\n".join(messages)
 
 
-def build_textgrid(df: pd.DataFrame, observation_id: str, xmin: float = 0.0, xmax: float | None = None) -> str:
+def build_textgrid(
+    df: pd.DataFrame,
+    observation_id: str,
+    xmin: float = 0.0,
+    xmax: float | None = None,
+    include_modifiers: bool = False,
+    include_comments: bool = False,
+) -> str:
     """
     Build the Praat TextGrid text for one observation.
     """
@@ -107,7 +162,9 @@ def build_textgrid(df: pd.DataFrame, observation_id: str, xmin: float = 0.0, xma
         raise ValueError("Missing column(s): " + ", ".join(missing_columns))
 
     obs_df = df[df["Observation id"] == observation_id].copy()
-    obs_df = obs_df.dropna(subset=["Behavior", "Behavior type", "Start (s)", "Stop (s)"])
+    obs_df = obs_df.dropna(
+        subset=["Behavior", "Behavior type", "Start (s)", "Stop (s)"]
+    )
     obs_df["Subject"] = obs_df["Subject"].fillna(cfg.NO_FOCAL_SUBJECT)
 
     if xmax is None:
@@ -116,7 +173,13 @@ def build_textgrid(df: pd.DataFrame, observation_id: str, xmin: float = 0.0, xma
     xmin = float(xmin)
     xmax = max(float(xmax), xmin)
 
-    tiers = build_tiers(obs_df, xmin, xmax)
+    tiers = build_tiers(
+        obs_df,
+        xmin,
+        xmax,
+        include_modifiers=include_modifiers,
+        include_comments=include_comments,
+    )
 
     lines = [
         'File type = "ooTextFile"',
@@ -131,14 +194,26 @@ def build_textgrid(df: pd.DataFrame, observation_id: str, xmin: float = 0.0, xma
 
     for tier_index, tier in enumerate(tiers, start=1):
         if tier["class"] == "IntervalTier":
-            lines.extend(interval_tier_lines(tier_index, tier["name"], tier["intervals"], xmin, xmax))
+            lines.extend(
+                interval_tier_lines(
+                    tier_index, tier["name"], tier["intervals"], xmin, xmax
+                )
+            )
         else:
-            lines.extend(point_tier_lines(tier_index, tier["name"], tier["points"], xmin, xmax))
+            lines.extend(
+                point_tier_lines(tier_index, tier["name"], tier["points"], xmin, xmax)
+            )
 
     return "\n".join(lines) + "\n"
 
 
-def build_tiers(df: pd.DataFrame, xmin: float, xmax: float) -> list[dict]:
+def build_tiers(
+    df: pd.DataFrame,
+    xmin: float,
+    xmax: float,
+    include_modifiers: bool = False,
+    include_comments: bool = False,
+) -> list[dict]:
     """
     Build tier payloads grouped by subject, behavior, and behavior type.
     """
@@ -147,7 +222,11 @@ def build_tiers(df: pd.DataFrame, xmin: float, xmax: float) -> list[dict]:
     if df.empty:
         return tiers
 
-    df_sorted = df.sort_values(by=["Subject", "Behavior", "Behavior type", "Start (s)", "Stop (s)"], kind="stable")
+    modifier_columns = behavior_modifier_columns(df) if include_modifiers else []
+    df_sorted = df.sort_values(
+        by=["Subject", "Behavior", "Behavior type", "Start (s)", "Stop (s)"],
+        kind="stable",
+    )
 
     for (subject, behavior, behavior_type), group in df_sorted.groupby(
         ["Subject", "Behavior", "Behavior type"],
@@ -157,7 +236,14 @@ def build_tiers(df: pd.DataFrame, xmin: float, xmax: float) -> list[dict]:
         tier_name = make_tier_name(subject, behavior)
         if behavior_type in cfg.POINT_EVENT_TYPES:
             points = [
-                {"time": float(row["Start (s)"]), "mark": str(behavior)}
+                {
+                    "time": float(row["Start (s)"]),
+                    "mark": behavior_label(
+                        row,
+                        modifier_columns,
+                        include_comments=include_comments,
+                    ),
+                }
                 for row in group.to_dict("records")
                 if xmin <= float(row["Start (s)"]) <= xmax
             ]
@@ -171,11 +257,25 @@ def build_tiers(df: pd.DataFrame, xmin: float, xmax: float) -> list[dict]:
             stop = min(xmax, float(row["Stop (s)"]))
             if stop <= start:
                 continue
-            intervals.append({"start": start, "stop": stop, "text": str(behavior)})
+            intervals.append(
+                {
+                    "start": start,
+                    "stop": stop,
+                    "text": behavior_label(
+                        row,
+                        modifier_columns,
+                        include_comments=include_comments,
+                    ),
+                }
+            )
 
         for lane_index, lane in enumerate(split_overlapping_intervals(intervals)):
-            lane_name = tier_name if lane_index == 0 else f"{tier_name}_{lane_index + 1}"
-            tiers.append({"class": "IntervalTier", "name": lane_name, "intervals": lane})
+            lane_name = (
+                tier_name if lane_index == 0 else f"{tier_name}_{lane_index + 1}"
+            )
+            tiers.append(
+                {"class": "IntervalTier", "name": lane_name, "intervals": lane}
+            )
 
     return tiers
 
@@ -188,7 +288,9 @@ def split_overlapping_intervals(intervals: list[dict]) -> list[list[dict]]:
     lanes: list[list[dict]] = []
     lane_stops: list[float] = []
 
-    for interval in sorted(intervals, key=lambda item: (item["start"], item["stop"], item["text"])):
+    for interval in sorted(
+        intervals, key=lambda item: (item["start"], item["stop"], item["text"])
+    ):
         for lane_index, last_stop in enumerate(lane_stops):
             if interval["start"] >= last_stop:
                 lanes[lane_index].append(interval)
@@ -201,7 +303,130 @@ def split_overlapping_intervals(intervals: list[dict]) -> list[list[dict]]:
     return lanes
 
 
-def interval_tier_lines(tier_index: int, name: str, intervals: list[dict], xmin: float, xmax: float) -> list[str]:
+def should_include_modifiers(parameters: dict = None) -> bool:
+    """
+    Return whether BORIS modifier values should be appended to behavior labels.
+    """
+
+    if not parameters:
+        return False
+    return bool(parameters.get("include modifiers", False))
+
+
+def ask_include_comments(df: pd.DataFrame) -> bool:
+    """
+    Ask whether BORIS event comments should be appended to behavior labels.
+    """
+
+    if not dataframe_has_comments(df):
+        return False
+
+    answer = QMessageBox.question(
+        None,
+        "Export events as Praat TextGrid",
+        (
+            "Add event comments to TextGrid labels?\n\n"
+            "Comments will be appended as: "
+            "Behavior|modifiers [comments: start=...; stop=...]"
+        ),
+        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        QMessageBox.StandardButton.No,
+    )
+    return answer == QMessageBox.StandardButton.Yes
+
+
+def dataframe_has_comments(df: pd.DataFrame) -> bool:
+    for column, _ in COMMENT_COLUMNS:
+        if column not in df.columns:
+            continue
+        for value in df[column]:
+            if label_value_strings(value):
+                return True
+    return False
+
+
+def behavior_modifier_columns(df: pd.DataFrame) -> list[tuple]:
+    """
+    Return BORIS modifier columns named as (behavior code, modifier set).
+    """
+
+    return [
+        column
+        for column in df.columns
+        if isinstance(column, tuple) and len(column) >= 2
+    ]
+
+
+def behavior_label(
+    row: dict,
+    modifier_columns: list[tuple],
+    include_comments: bool = False,
+) -> str:
+    behavior = row["Behavior"]
+    label = str(behavior)
+    modifiers = row_modifier_values(row, behavior, modifier_columns)
+    if modifiers:
+        label += "|" + ",".join(modifiers)
+    if include_comments:
+        label += comment_suffix(row)
+    return label
+
+
+def comment_suffix(row: dict) -> str:
+    start_values = label_value_strings(row.get("Comment start"))
+    stop_values = label_value_strings(row.get("Comment stop"))
+
+    if start_values == stop_values and start_values:
+        return " [comments: comment=" + " | ".join(start_values) + "]"
+
+    comment_parts: list[str] = []
+    for column, label in COMMENT_COLUMNS:
+        values = label_value_strings(row.get(column))
+        if values:
+            comment_parts.append(f"{label}=" + " | ".join(values))
+
+    if not comment_parts:
+        return ""
+
+    return " [comments: " + "; ".join(comment_parts) + "]"
+
+
+def row_modifier_values(
+    row: dict, behavior: object, modifier_columns: list[tuple]
+) -> list[str]:
+    modifiers: list[str] = []
+
+    for column in modifier_columns:
+        if column[0] != behavior:
+            continue
+        modifiers.extend(label_value_strings(row.get(column)))
+
+    return modifiers
+
+
+def label_value_strings(value: object) -> list[str]:
+    if isinstance(value, (list, tuple)):
+        values = value
+    else:
+        values = [value]
+
+    strings: list[str] = []
+    for item in values:
+        try:
+            if pd.isna(item):
+                continue
+        except (TypeError, ValueError):
+            pass
+        text = str(item).strip()
+        if text:
+            strings.append(text)
+
+    return strings
+
+
+def interval_tier_lines(
+    tier_index: int, name: str, intervals: list[dict], xmin: float, xmax: float
+) -> list[str]:
     intervals_with_nulls = add_null_intervals(intervals, xmin, xmax)
     lines = [
         f"    item [{tier_index}]:",
@@ -225,7 +450,9 @@ def interval_tier_lines(tier_index: int, name: str, intervals: list[dict], xmin:
     return lines
 
 
-def point_tier_lines(tier_index: int, name: str, points: list[dict], xmin: float, xmax: float) -> list[str]:
+def point_tier_lines(
+    tier_index: int, name: str, points: list[dict], xmin: float, xmax: float
+) -> list[str]:
     points = sorted(points, key=lambda item: (item["time"], item["mark"]))
     lines = [
         f"    item [{tier_index}]:",
@@ -275,18 +502,26 @@ def add_null_intervals(intervals: list[dict], xmin: float, xmax: float) -> list[
     return filled
 
 
-def observation_bounds(df: pd.DataFrame, observation_id: str, project: dict = None, parameters: dict = None) -> tuple[float, float]:
+def observation_bounds(
+    df: pd.DataFrame, observation_id: str, project: dict = None, parameters: dict = None
+) -> tuple[float, float]:
     """
     Determine the TextGrid time domain for one observation.
     """
 
-    obs_df = df[df["Observation id"] == observation_id] if "Observation id" in df.columns else pd.DataFrame()
+    obs_df = (
+        df[df["Observation id"] == observation_id]
+        if "Observation id" in df.columns
+        else pd.DataFrame()
+    )
     fallback_xmax = dataframe_observation_xmax(obs_df)
 
     if parameters:
         time_mode = parameters.get(cfg.TIME)
         if time_mode == cfg.TIME_ARBITRARY_INTERVAL:
-            return float(parameters.get(cfg.START_TIME, 0.0)), float(parameters.get(cfg.END_TIME, fallback_xmax))
+            return float(parameters.get(cfg.START_TIME, 0.0)), float(
+                parameters.get(cfg.END_TIME, fallback_xmax)
+            )
 
         if project and time_mode == cfg.TIME_OBS_INTERVAL:
             observation = project.get(cfg.OBSERVATIONS, {}).get(observation_id, {})
@@ -354,7 +589,9 @@ def selected_observation_ids(df: pd.DataFrame, project: dict = None) -> list[str
     return sorted(str(obs_id) for obs_id in df["Observation id"].dropna().unique())
 
 
-def unique_textgrid_path(export_dir: Path, observation_id: str, used_paths: set[Path]) -> Path:
+def unique_textgrid_path(
+    export_dir: Path, observation_id: str, used_paths: set[Path]
+) -> Path:
     base_name = safe_file_name(observation_id) or "observation"
     path = export_dir / f"{base_name}.TextGrid"
     counter = 2
