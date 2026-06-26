@@ -13,7 +13,7 @@ __version_date__ = "2026-06-26"
 __plugin_name__ = "Behavior by frame"
 __author__ = "Olivier Friard - University of Torino - Italy"
 __description__ = "Generate a frame-by-frame table showing the active behavior labels for each subject in media observations."
-
+__require_boris_version__ = ">=9.12"
 
 FPS_COLUMNS = ("FPS (frame/s)", "FPS", "fps")
 MEDIA_DURATION_COLUMNS = ("Media duration (s)",)
