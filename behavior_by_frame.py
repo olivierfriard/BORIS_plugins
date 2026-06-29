@@ -8,8 +8,8 @@ import math
 
 import pandas as pd
 
-__version__ = "0.1.0"
-__version_date__ = "2026-06-26"
+__version__ = "0.2.0"
+__version_date__ = "2026-06-29"
 __plugin_name__ = "Behavior by frame"
 __author__ = "Olivier Friard - University of Torino - Italy"
 __description__ = "Generate a frame-by-frame table showing the active behavior labels for each subject in media observations."
@@ -29,6 +29,10 @@ OUTPUT_COLUMNS = [
 BEHAVIOR_SEPARATOR = " + "
 MODIFIER_SEPARATOR = "|"
 MODIFIER_VALUE_SEPARATOR = ","
+COMMENT_COLUMNS = (
+    ("Comment start", "start"),
+    ("Comment stop", "stop"),
+)
 MEDIA_OBSERVATION_TYPE = "MEDIA"
 POINT_EVENT_TYPE = "Point event"
 TIME_FULL_OBS = "full obs"
@@ -174,7 +178,27 @@ def behavior_label(row: dict, modifier_columns: list[tuple]) -> str:
     modifiers = row_modifier_values(row, behavior, modifier_columns)
     if modifiers:
         label += MODIFIER_SEPARATOR + MODIFIER_VALUE_SEPARATOR.join(modifiers)
+    label += comment_suffix(row)
     return label
+
+
+def comment_suffix(row: dict) -> str:
+    start_values = label_value_strings(row.get("Comment start"))
+    stop_values = label_value_strings(row.get("Comment stop"))
+
+    if start_values == stop_values and start_values:
+        return " [comments: comment=" + " | ".join(start_values) + "]"
+
+    comment_parts: list[str] = []
+    for column, label in COMMENT_COLUMNS:
+        values = label_value_strings(row.get(column))
+        if values:
+            comment_parts.append(f"{label}=" + " | ".join(values))
+
+    if not comment_parts:
+        return ""
+
+    return " [comments: " + "; ".join(comment_parts) + "]"
 
 
 def row_modifier_values(row: dict, behavior: object, modifier_columns: list[tuple]) -> list[str]:
